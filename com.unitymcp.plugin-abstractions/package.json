@@ -1,0 +1,15 @@
+{
+  "name": "com.unitymcp.plugin-abstractions",
+  "version": "0.1.0",
+  "displayName": "Unity MCP Plugin Abstractions",
+  "description": "Unity MCP plugin SDK contracts for building external Unity Agent Bridge plugins.",
+  "unity": "2022.3",
+  "keywords": [
+    "unity",
+    "mcp",
+    "plugin",
+    "sdk",
+    "agent"
+  ],
+  "type": "library"
+}
