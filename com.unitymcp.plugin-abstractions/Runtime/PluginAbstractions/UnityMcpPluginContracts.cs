@@ -42,11 +42,22 @@ namespace UnityMcp.Plugin
         EmbeddedResource = 3
     }
 
+    public sealed class UnityMcpRoslynCompilerPayload
+    {
+        public string CompilerPath { get; set; }
+
+        public string RuntimeMode { get; set; }
+
+        public string RuntimeVersion { get; set; }
+    }
+
     public sealed class UnityMcpPluginContext
     {
         public string ProjectRoot { get; set; }
 
         public string AssemblyName { get; set; }
+
+        public UnityMcpRoslynCompilerPayload RoslynCompilerPayload { get; set; }
 
         public object HostServices { get; set; }
     }
