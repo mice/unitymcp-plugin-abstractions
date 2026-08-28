@@ -1,0 +1,21 @@
+{
+  "name": "UnityMcp.Plugin.Abstractions.Tests.Editor",
+  "rootNamespace": "UnityMcp.Plugin.Tests",
+  "references": [
+    "UnityMcp.Plugin.Abstractions"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": true
+}

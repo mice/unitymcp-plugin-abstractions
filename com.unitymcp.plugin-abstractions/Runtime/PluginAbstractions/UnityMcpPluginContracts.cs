@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace UnityMcp.Plugin
 {
@@ -57,9 +58,28 @@ namespace UnityMcp.Plugin
 
         public string AssemblyName { get; set; }
 
+        public string PluginId { get; set; }
+
+        public string PluginVersion { get; set; }
+
+        public string PluginRoot { get; set; }
+
+        public IReadOnlyList<UnityMcpPluginPayload> Payloads { get; set; } = Array.Empty<UnityMcpPluginPayload>();
+
         public UnityMcpRoslynCompilerPayload RoslynCompilerPayload { get; set; }
 
         public object HostServices { get; set; }
+    }
+
+    public sealed class UnityMcpPluginPayload
+    {
+        public string Id { get; set; }
+
+        public string Rid { get; set; }
+
+        public string Path { get; set; }
+
+        public string Sha256 { get; set; }
     }
 
     public sealed class UnityMcpToolContext
@@ -175,6 +195,46 @@ namespace UnityMcp.Plugin
 
     public static class UnityMcpPluginContractValidator
     {
+        public static void ValidatePluginContext(UnityMcpPluginContext context, string paramName = "context")
+        {
+            if (context == null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+
+            if (context.Payloads == null || context.Payloads.Count == 0)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(context.PluginId))
+            {
+                throw new ArgumentException("PluginId is required when payloads are provided.", paramName);
+            }
+
+            if (string.IsNullOrWhiteSpace(context.PluginRoot) || !Path.IsPathRooted(context.PluginRoot))
+            {
+                throw new ArgumentException("PluginRoot must be an absolute path when payloads are provided.", paramName);
+            }
+
+            var pluginRoot = Path.GetFullPath(context.PluginRoot);
+            var payloadIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var payload in context.Payloads)
+            {
+                ValidatePayload(payload, pluginRoot, payloadIds, paramName);
+            }
+        }
+
+        public static void ValidatePayload(UnityMcpPluginPayload payload, string pluginRoot, string paramName = "payload")
+        {
+            if (string.IsNullOrWhiteSpace(pluginRoot) || !Path.IsPathRooted(pluginRoot))
+            {
+                throw new ArgumentException("Plugin root must be an absolute path.", nameof(pluginRoot));
+            }
+
+            ValidatePayload(payload, Path.GetFullPath(pluginRoot), new HashSet<string>(StringComparer.Ordinal), paramName);
+        }
+
         public static void ValidateTool(IUnityMcpTool tool, string paramName = "tool")
         {
             if (tool == null)
@@ -247,6 +307,73 @@ namespace UnityMcp.Plugin
                 default:
                     throw new ArgumentOutOfRangeException(paramName, schema.Kind, "Unsupported schema kind.");
             }
+        }
+
+        private static void ValidatePayload(
+            UnityMcpPluginPayload payload,
+            string pluginRoot,
+            ISet<string> payloadIds,
+            string paramName)
+        {
+            if (payload == null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+
+            if (string.IsNullOrWhiteSpace(payload.Id))
+            {
+                throw new ArgumentException("Payload Id is required.", paramName);
+            }
+
+            if (!payloadIds.Add(payload.Id))
+            {
+                throw new ArgumentException($"Payload Id '{payload.Id}' is duplicated.", paramName);
+            }
+
+            if (string.IsNullOrWhiteSpace(payload.Rid))
+            {
+                throw new ArgumentException($"Payload '{payload.Id}' must declare a RID.", paramName);
+            }
+
+            if (string.IsNullOrWhiteSpace(payload.Path) || !Path.IsPathRooted(payload.Path))
+            {
+                throw new ArgumentException($"Payload '{payload.Id}' path must be absolute.", paramName);
+            }
+
+            var payloadPath = Path.GetFullPath(payload.Path);
+            var relativePath = Path.GetRelativePath(pluginRoot, payloadPath);
+            if (relativePath == ".." ||
+                relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+                Path.IsPathRooted(relativePath))
+            {
+                throw new ArgumentException($"Payload '{payload.Id}' path must remain under PluginRoot.", paramName);
+            }
+
+            if (!string.IsNullOrWhiteSpace(payload.Sha256) && !IsSha256(payload.Sha256))
+            {
+                throw new ArgumentException($"Payload '{payload.Id}' SHA-256 must contain 64 hexadecimal characters.", paramName);
+            }
+        }
+
+        private static bool IsSha256(string value)
+        {
+            if (value.Length != 64)
+            {
+                return false;
+            }
+
+            for (var index = 0; index < value.Length; index++)
+            {
+                var character = value[index];
+                if (!((character >= '0' && character <= '9') ||
+                      (character >= 'a' && character <= 'f') ||
+                      (character >= 'A' && character <= 'F')))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
