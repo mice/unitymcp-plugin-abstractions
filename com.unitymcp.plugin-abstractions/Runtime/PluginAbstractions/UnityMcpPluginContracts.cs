@@ -118,6 +118,11 @@ namespace UnityMcp.Plugin
         UnityMcpToolResult Execute(UnityMcpToolContext context, IUnityMcpCancellation cancellation);
     }
 
+    public interface IUnityMcpToolProtocolMetadata
+    {
+        string McpName { get; }
+    }
+
     public static class UnityMcpToolStatus
     {
         public const string Success = "success";
@@ -244,6 +249,32 @@ namespace UnityMcp.Plugin
 
             ValidateDescriptor(tool.Descriptor, $"{paramName}.Descriptor");
             ValidateSchema(tool.InputSchema, $"{paramName}.InputSchema");
+            if (tool is IUnityMcpToolProtocolMetadata protocolMetadata)
+            {
+                ValidateMcpName(protocolMetadata.McpName, $"{paramName}.McpName");
+            }
+        }
+
+        public static void ValidateMcpName(string mcpName, string paramName = "mcpName")
+        {
+            if (string.IsNullOrWhiteSpace(mcpName) || mcpName.Length > 255 ||
+                !mcpName.StartsWith("unity_", StringComparison.Ordinal) ||
+                mcpName.EndsWith("_", StringComparison.Ordinal) ||
+                mcpName.Contains("__"))
+            {
+                throw new ArgumentException("MCP tool name must use canonical unity_ lower snake case and contain at most 255 characters.", paramName);
+            }
+
+            for (var index = 0; index < mcpName.Length; index++)
+            {
+                var character = mcpName[index];
+                if ((character < 'a' || character > 'z') &&
+                    (character < '0' || character > '9') &&
+                    character != '_')
+                {
+                    throw new ArgumentException("MCP tool name must use canonical unity_ lower snake case and contain at most 255 characters.", paramName);
+                }
+            }
         }
 
         public static void ValidateDescriptor(UnityMcpToolDescriptor descriptor, string paramName = "descriptor")

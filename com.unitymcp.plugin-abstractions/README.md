@@ -8,6 +8,8 @@ External package plugins receive immutable package content through `UnityMcpPlug
 
 `UnityMcpPluginContractValidator.ValidatePluginContext` validates payload identity, RID, absolute normalized path containment, and optional SHA-256 metadata without depending on Unity or Agent Bridge types.
 
+Tools may additionally implement `IUnityMcpToolProtocolMetadata` to declare a canonical MCP-facing name from inside the provider DLL. Hosts validate declared names as `unity_` lower snake case. Tools compiled against earlier package versions remain valid and may omit this optional interface.
+
 Package id: `com.unitymcp.plugin-abstractions`
 
 Assembly name: `UnityMcp.Plugin.Abstractions`
